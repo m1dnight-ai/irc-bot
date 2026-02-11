@@ -36,7 +36,10 @@ gh auth status >/dev/null 2>&1 || die "gh not authenticated. Run: gh auth login"
 cd "$PROJECT_DIR"
 
 if [[ -n "$(git status --porcelain)" ]]; then
-  die "Working tree is dirty. Commit or stash changes first."
+  log "Uncommitted changes detected. Committing..."
+  git add -A
+  git commit -m "chore: auto-commit uncommitted changes before work_issue run"
+  log "Changes committed."
 fi
 
 # ── Step 1: Find oldest open unassigned issue ────────────────────────
@@ -104,6 +107,12 @@ BRANCH="issue-${ISSUE_NUMBER}-${SLUG}"
 log "Creating branch: ${BRANCH}"
 git checkout "$DEFAULT_BRANCH"
 git pull origin "$DEFAULT_BRANCH"
+
+if git show-ref --verify --quiet "refs/heads/${BRANCH}"; then
+  log "Branch ${BRANCH} already exists locally. Deleting it..."
+  git branch -D "$BRANCH"
+fi
+
 git checkout -b "$BRANCH"
 
 # ── Step 5: Invoke Claude Code ───────────────────────────────────────
@@ -194,7 +203,7 @@ if [[ -n "$PIDS" ]]; then
 fi
 
 log "Starting phx.server in background..."
-nohup "$MIXE" mix phx.server > /tmp/irc_bot_phx.log 2>&1 &
+PORT=80 nohup "$MIXE" mix phx.server > /tmp/irc_bot_phx.log 2>&1 &
 log "phx.server started (PID: $!, log: /tmp/irc_bot_phx.log)"
 
 # ── Done ─────────────────────────────────────────────────────────────
