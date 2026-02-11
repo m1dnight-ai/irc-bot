@@ -46,4 +46,11 @@ defmodule IrcBotWeb.ThemeToggleTest do
     assert html =~ "localStorage"
     assert html =~ "data-theme"
   end
+
+  test "pink theme is the default when no preference is saved", %{conn: conn} do
+    conn = get(conn, "/")
+    html = html_response(conn, 200)
+
+    assert html =~ ~s(|| "pink")
+  end
 end
