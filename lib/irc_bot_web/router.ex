@@ -19,6 +19,7 @@ defmodule IrcBotWeb.Router do
 
     live "/", DashboardLive
     live "/karma", KarmaLive
+    live "/urls", UrlsLive
     live "/channels/:channel", ChannelLive
   end
 

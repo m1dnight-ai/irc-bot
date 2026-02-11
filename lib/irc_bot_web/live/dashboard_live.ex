@@ -7,7 +7,8 @@ defmodule IrcBotWeb.DashboardLive do
 
   import IrcBotWeb.IrcComponents
 
-  alias IrcBot.Plugins.Karma.Store
+  alias IrcBot.Plugins.Karma.Store, as: KarmaStore
+  alias IrcBot.Plugins.UrlCounter.Store, as: UrlStore
 
   @max_messages 50
 
@@ -16,13 +17,16 @@ defmodule IrcBotWeb.DashboardLive do
     if connected?(socket) do
       Phoenix.PubSub.subscribe(IrcBot.PubSub, "irc:events")
       Phoenix.PubSub.subscribe(IrcBot.PubSub, "karma:updates")
+      Phoenix.PubSub.subscribe(IrcBot.PubSub, "url:updates")
     end
 
     {:ok,
      assign(socket,
        page_title: "Dashboard",
        messages: IrcBot.IRC.MessageBuffer.recent(@max_messages),
-       karma_leaders: Store.global_leaderboard(5),
+       karma_leaders: KarmaStore.global_leaderboard(5),
+       recent_urls: UrlStore.recent_urls(5),
+       top_domains: UrlStore.top_domains(5),
        connected_to_irc: false
      )}
   end
@@ -48,7 +52,16 @@ defmodule IrcBotWeb.DashboardLive do
 
   @impl true
   def handle_info(%{event: :karma_changed}, socket) do
-    {:noreply, assign(socket, :karma_leaders, Store.global_leaderboard(5))}
+    {:noreply, assign(socket, :karma_leaders, KarmaStore.global_leaderboard(5))}
+  end
+
+  @impl true
+  def handle_info(%{event: :url_shared}, socket) do
+    {:noreply,
+     assign(socket,
+       recent_urls: UrlStore.recent_urls(5),
+       top_domains: UrlStore.top_domains(5)
+     )}
   end
 
   @impl true
@@ -86,9 +99,40 @@ defmodule IrcBotWeb.DashboardLive do
             </div>
           </div>
 
-          <%!-- Karma Sidebar --%>
+          <%!-- Sidebar --%>
           <div>
             <.karma_sidebar karma_leaders={@karma_leaders} show_link />
+
+            <div class="card bg-base-200 shadow-lg mt-4">
+              <div class="card-body">
+                <h2 class="card-title">Recent URLs</h2>
+                <div :if={@recent_urls == []} class="text-base-content/50 italic">
+                  No URLs shared yet.
+                </div>
+                <div class="space-y-2">
+                  <div :for={entry <- @recent_urls} class="truncate">
+                    <span class="font-mono text-sm" title={entry.url}>{entry.url}</span>
+                  </div>
+                </div>
+                <div :if={@top_domains != []} class="mt-2 pt-2 border-t border-base-content/10">
+                  <h3 class="text-sm font-semibold mb-1">Top Domains</h3>
+                  <div class="space-y-1">
+                    <div
+                      :for={{domain, count} <- @top_domains}
+                      class="flex justify-between items-center text-sm"
+                    >
+                      <span class="font-mono">{domain}</span>
+                      <span class="badge badge-sm badge-primary">{count}</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="card-actions justify-end mt-2">
+                  <.link navigate={~p"/urls"} class="btn btn-sm btn-outline">
+                    View All URLs
+                  </.link>
+                </div>
+              </div>
+            </div>
 
             <div class="card bg-base-200 shadow-lg mt-4">
               <div class="card-body">
