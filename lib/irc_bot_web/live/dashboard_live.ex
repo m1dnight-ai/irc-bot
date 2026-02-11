@@ -32,6 +32,7 @@ defmodule IrcBotWeb.DashboardLive do
        channels: channels,
        selected_channel: selected,
        form: to_form(%{"text" => ""}),
+       join_form: to_form(%{"channel" => ""}, as: :join),
        connected_to_irc: false
      )
      |> load_channel_data(selected)}
@@ -46,6 +47,32 @@ defmodule IrcBotWeb.DashboardLive do
        |> load_channel_data(channel)}
     else
       {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("join_channel", %{"join" => %{"channel" => channel}}, socket) do
+    channel = channel |> String.trim() |> normalize_channel()
+
+    if channel == "#" or channel == "" do
+      {:noreply, socket}
+    else
+      if channel in socket.assigns.channels do
+        {:noreply,
+         socket
+         |> assign(:selected_channel, channel)
+         |> load_channel_data(channel)
+         |> assign(:join_form, to_form(%{"channel" => ""}, as: :join))}
+      else
+        IrcBot.IRC.Client.join_channel(channel)
+
+        {:noreply,
+         socket
+         |> update(:channels, fn channels -> channels ++ [channel] end)
+         |> assign(:selected_channel, channel)
+         |> load_channel_data(channel)
+         |> assign(:join_form, to_form(%{"channel" => ""}, as: :join))}
+      end
     end
   end
 
@@ -142,7 +169,11 @@ defmodule IrcBotWeb.DashboardLive do
     {:noreply, socket}
   end
 
-  defp load_channel_data(socket, nil), do: assign(socket, messages: [], karma_leaders: [], recent_urls: [], top_domains: [])
+  defp normalize_channel("#" <> _ = channel), do: channel
+  defp normalize_channel(channel), do: "#" <> channel
+
+  defp load_channel_data(socket, nil),
+    do: assign(socket, messages: [], karma_leaders: [], recent_urls: [], top_domains: [])
 
   defp load_channel_data(socket, channel) do
     assign(socket,
@@ -169,16 +200,34 @@ defmodule IrcBotWeb.DashboardLive do
           </div>
         </div>
 
-        <div role="tablist" class="tabs tabs-bordered">
-          <button
-            :for={ch <- @channels}
-            role="tab"
-            phx-click="select_channel"
-            phx-value-channel={ch}
-            class={["tab", ch == @selected_channel && "tab-active"]}
+        <div class="flex items-center gap-4 flex-wrap">
+          <div role="tablist" class="tabs tabs-bordered flex-1">
+            <button
+              :for={ch <- @channels}
+              role="tab"
+              phx-click="select_channel"
+              phx-value-channel={ch}
+              class={["tab", ch == @selected_channel && "tab-active"]}
+            >
+              {ch}
+            </button>
+          </div>
+          <.form
+            for={@join_form}
+            id="join-channel-form"
+            phx-submit="join_channel"
+            class="flex gap-2 items-center"
           >
-            {ch}
-          </button>
+            <input
+              type="text"
+              name="join[channel]"
+              value={@join_form[:channel].value}
+              placeholder="#channel"
+              class="input input-bordered input-sm w-36"
+              autocomplete="off"
+            />
+            <button type="submit" class="btn btn-secondary btn-sm">Join</button>
+          </.form>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
