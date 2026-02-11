@@ -35,27 +35,54 @@ gh auth status >/dev/null 2>&1 || die "gh not authenticated. Run: gh auth login"
 
 cd "$PROJECT_DIR"
 
+# ── Ensure clean worktree and switch to main ─────────────────────────
 if [[ -n "$(git status --porcelain)" ]]; then
-  die "Working tree is dirty. Commit or stash changes first."
+  log "Uncommitted changes detected. Committing on current branch..."
+  git add -A
+  git commit -m "chore: auto-commit uncommitted changes before work_issue run" || true
 fi
 
-# ── Step 1: Find oldest open unassigned issue ────────────────────────
+CURRENT_BRANCH=$(git branch --show-current)
+if [[ "$CURRENT_BRANCH" != "$DEFAULT_BRANCH" ]]; then
+  log "On branch ${CURRENT_BRANCH}, switching to ${DEFAULT_BRANCH}..."
+  git checkout "$DEFAULT_BRANCH"
+fi
+
+git pull origin "$DEFAULT_BRANCH"
+
+# ── Step 1: Find oldest open unassigned issue without a PR ───────────
 log "Searching for oldest open unassigned issue..."
 
-ISSUE_JSON=$(gh issue list \
+# Get issue numbers that already have an open PR (body contains "Closes #N")
+ISSUES_WITH_PRS=$(gh pr list --repo "$REPO" --state open --json body \
+  --jq '[.[].body | capture("#(?<num>[0-9]+)") | .num] | unique | .[]')
+
+ISSUES_JSON=$(gh issue list \
   --repo "$REPO" \
   --state open \
   --assignee "" \
   --json number,title,body,labels \
   --limit 100 \
-  --jq 'sort_by(.number) | .[0] // empty')
+  --jq 'sort_by(.number)')
 
-if [[ -z "$ISSUE_JSON" ]]; then
-  log "No open unassigned issues found. Nothing to do."
+ISSUE_JSON=""
+ISSUE_NUMBER=""
+
+ISSUE_COUNT=$(echo "$ISSUES_JSON" | jq 'length')
+for (( i=0; i<ISSUE_COUNT; i++ )); do
+  num=$(echo "$ISSUES_JSON" | jq -r ".[$i].number")
+  if ! echo "$ISSUES_WITH_PRS" | grep -qx "$num"; then
+    ISSUE_JSON=$(echo "$ISSUES_JSON" | jq -c ".[$i]")
+    ISSUE_NUMBER="$num"
+    break
+  fi
+done
+
+if [[ -z "$ISSUE_NUMBER" ]]; then
+  log "No open unassigned issues without PRs found. Nothing to do."
   exit 0
 fi
 
-ISSUE_NUMBER=$(echo "$ISSUE_JSON" | jq -r '.number')
 ISSUE_TITLE=$(echo "$ISSUE_JSON"  | jq -r '.title')
 ISSUE_BODY=$(echo "$ISSUE_JSON"   | jq -r '.body // ""')
 ISSUE_LABELS=$(echo "$ISSUE_JSON" | jq -r '(.labels // []) | map(.name) | join(", ")')
@@ -102,8 +129,12 @@ SLUG=$(slugify "$ISSUE_TITLE")
 BRANCH="issue-${ISSUE_NUMBER}-${SLUG}"
 
 log "Creating branch: ${BRANCH}"
-git checkout "$DEFAULT_BRANCH"
-git pull origin "$DEFAULT_BRANCH"
+
+if git show-ref --verify --quiet "refs/heads/${BRANCH}"; then
+  log "Branch ${BRANCH} already exists locally. Deleting it..."
+  git branch -D "$BRANCH"
+fi
+
 git checkout -b "$BRANCH"
 
 # ── Step 5: Invoke Claude Code ───────────────────────────────────────
@@ -154,7 +185,7 @@ log "Running test suite to verify implementation..."
 
 # ── Step 7: Push branch and create PR ───────────────────────────────
 log "Pushing branch ${BRANCH} to origin..."
-git push -u origin "$BRANCH"
+git push -u --force-with-lease origin "$BRANCH"
 
 log "Creating pull request..."
 PR_URL=$(gh pr create \
@@ -182,6 +213,11 @@ PR_EOF
 
 log "Pull request created: ${PR_URL}"
 
+# Assign the PR to the same user
+PR_NUMBER=$(basename "$PR_URL")
+log "Assigning PR #${PR_NUMBER} to ${GH_USER}..."
+gh pr edit "$PR_NUMBER" --repo "$REPO" --add-assignee "$GH_USER"
+
 # ── Step 8: Restart dev server ──────────────────────────────────────
 log "Restarting dev server..."
 
@@ -194,7 +230,7 @@ if [[ -n "$PIDS" ]]; then
 fi
 
 log "Starting phx.server in background..."
-nohup "$MIXE" mix phx.server > /tmp/irc_bot_phx.log 2>&1 &
+PORT=80 nohup "$MIXE" mix phx.server > /tmp/irc_bot_phx.log 2>&1 &
 log "phx.server started (PID: $!, log: /tmp/irc_bot_phx.log)"
 
 # ── Done ─────────────────────────────────────────────────────────────

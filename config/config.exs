@@ -10,7 +10,12 @@ import Config
 config :irc_bot,
   ecto_repos: [IrcBot.Repo],
   generators: [timestamp_type: :utc_datetime],
-  plugins: [IrcBot.Plugins.Karma, IrcBot.Plugins.Echo, IrcBot.Plugins.UrlCounter, IrcBot.Plugins.Issue]
+  plugins: [
+    IrcBot.Plugins.Karma,
+    IrcBot.Plugins.Echo,
+    IrcBot.Plugins.UrlCounter,
+    IrcBot.Plugins.Issue
+  ]
 
 # Configure the endpoint
 config :irc_bot, IrcBotWeb.Endpoint,

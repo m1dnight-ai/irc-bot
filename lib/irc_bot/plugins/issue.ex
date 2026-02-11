@@ -76,7 +76,10 @@ defmodule IrcBot.Plugins.Issue do
           send_async_reply(channel, reply)
 
         {output, _code} ->
-          send_async_reply(channel, "#{nick}: Failed to create issue. #{String.slice(output, 0, 100)}")
+          send_async_reply(
+            channel,
+            "#{nick}: Failed to create issue. #{String.slice(output, 0, 100)}"
+          )
       end
     end)
   end

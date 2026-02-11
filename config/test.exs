@@ -18,8 +18,7 @@ config :irc_bot, IrcBotWeb.Endpoint,
   server: false
 
 # IRC config for tests (client doesn't start, but dashboard reads channels)
-config :irc_bot, :irc,
-  channels: ["#general"]
+config :irc_bot, :irc, channels: ["#general"]
 
 # Print only warnings and errors during test
 config :logger, level: :warning
