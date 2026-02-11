@@ -40,6 +40,9 @@ defmodule IrcBot.Plugins.Issue do
   end
 
   defp spawn_issue_task(nick, channel, description) do
+    require Logger
+    Logger.info("Issue plugin: spawning task for '#{description}' from #{nick} in #{channel}")
+
     Task.start(fn ->
       prompt = """
       Create a GitHub issue on #{@repo}.
@@ -71,11 +74,13 @@ defmodule IrcBot.Plugins.Issue do
              ]
            ) do
         {output, 0} ->
+          Logger.info("Issue plugin: claude exited 0, output length=#{String.length(output)}")
           url = extract_issue_url(output)
           reply = if url, do: "#{nick}: Issue created: #{url}", else: "#{nick}: Issue created."
           send_async_reply(channel, reply)
 
-        {output, _code} ->
+        {output, code} ->
+          Logger.error("Issue plugin: claude exited #{code}, output: #{String.slice(output, 0, 300)}")
           send_async_reply(
             channel,
             "#{nick}: Failed to create issue. #{String.slice(output, 0, 100)}"
