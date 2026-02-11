@@ -58,7 +58,7 @@
 
 @plugin "../vendor/daisyui-theme" {
   name: "light";
-  default: true;
+  default: false;
   prefersdark: false;
   color-scheme: "light";
   --color-base-100: oklch(98% 0 0);
@@ -93,7 +93,7 @@
 
 @plugin "../vendor/daisyui-theme" {
   name: "pink";
-  default: false;
+  default: true;
   prefersdark: false;
   color-scheme: "light";
   --color-base-100: oklch(93% 0.04 350);
