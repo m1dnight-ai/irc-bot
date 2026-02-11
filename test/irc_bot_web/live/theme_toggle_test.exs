@@ -6,9 +6,10 @@ defmodule IrcBotWeb.ThemeToggleTest do
   test "theme toggle is rendered on dashboard", %{conn: conn} do
     {:ok, view, _html} = live(conn, "/")
 
-    # Three theme buttons: system, light, dark
+    # Four theme buttons: system, light, pink, dark
     assert has_element?(view, "button[data-phx-theme=system]")
     assert has_element?(view, "button[data-phx-theme=light]")
+    assert has_element?(view, "button[data-phx-theme=pink]")
     assert has_element?(view, "button[data-phx-theme=dark]")
   end
 
@@ -17,6 +18,7 @@ defmodule IrcBotWeb.ThemeToggleTest do
 
     assert has_element?(view, "button[data-phx-theme=system]")
     assert has_element?(view, "button[data-phx-theme=light]")
+    assert has_element?(view, "button[data-phx-theme=pink]")
     assert has_element?(view, "button[data-phx-theme=dark]")
   end
 
@@ -25,6 +27,7 @@ defmodule IrcBotWeb.ThemeToggleTest do
 
     assert has_element?(view, "button[data-phx-theme=system]")
     assert has_element?(view, "button[data-phx-theme=light]")
+    assert has_element?(view, "button[data-phx-theme=pink]")
     assert has_element?(view, "button[data-phx-theme=dark]")
   end
 

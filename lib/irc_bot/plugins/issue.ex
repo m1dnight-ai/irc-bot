@@ -80,7 +80,10 @@ defmodule IrcBot.Plugins.Issue do
           send_async_reply(channel, reply)
 
         {output, code} ->
-          Logger.error("Issue plugin: claude exited #{code}, output: #{String.slice(output, 0, 300)}")
+          Logger.error(
+            "Issue plugin: claude exited #{code}, output: #{String.slice(output, 0, 300)}"
+          )
+
           send_async_reply(
             channel,
             "#{nick}: Failed to create issue. #{String.slice(output, 0, 100)}"
