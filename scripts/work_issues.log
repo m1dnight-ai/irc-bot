@@ -12,6 +12,7 @@
 /bin/sh: 1: /home/christophe/irc-bot/scripts/work_issues.sh: not found
 /bin/sh: 1: /home/christophe/irc-bot/scripts/work_issues.sh: not found
 /bin/sh: 1: /home/christophe/irc-bot/scripts/work_issues.sh: not found
+<<<<<<< HEAD
 /bin/sh: 1: /home/christophe/irc-bot/scripts/work_issues.sh: not found
 /bin/sh: 1: /home/christophe/irc-bot/scripts/work_issues.sh: not found
 /bin/sh: 1: /home/christophe/irc-bot/scripts/work_issues.sh: not found
@@ -179,4 +180,7 @@
 /bin/sh: 1: /home/christophe/irc-bot/scripts/work_issues.sh: not found
 /bin/sh: 1: /home/christophe/irc-bot/scripts/work_issues.sh: not found
 /bin/sh: 1: /home/christophe/irc-bot/scripts/work_issues.sh: not found
+/bin/sh: 1: /home/christophe/irc-bot/scripts/work_issues.sh: not found
+=======
+>>>>>>> origin/main
 /bin/sh: 1: /home/christophe/irc-bot/scripts/work_issues.sh: not found
