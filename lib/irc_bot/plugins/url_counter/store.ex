@@ -27,10 +27,32 @@ defmodule IrcBot.Plugins.UrlCounter.Store do
     |> Repo.all()
   end
 
+  @doc "Returns the most recently shared URLs for a specific channel."
+  @spec recent_urls_for_channel(String.t(), pos_integer()) :: [Schema.t()]
+  def recent_urls_for_channel(channel, limit \\ 10) do
+    Schema
+    |> where(channel: ^channel)
+    |> order_by([u], desc: u.inserted_at, desc: u.id)
+    |> limit(^limit)
+    |> Repo.all()
+  end
+
   @doc "Returns the top domains by number of URLs shared."
   @spec top_domains(pos_integer()) :: [{String.t(), integer()}]
   def top_domains(limit \\ 10) do
     Schema
+    |> group_by([u], u.domain)
+    |> order_by([u], desc: count(u.id))
+    |> limit(^limit)
+    |> select([u], {u.domain, count(u.id)})
+    |> Repo.all()
+  end
+
+  @doc "Returns the top domains for a specific channel."
+  @spec top_domains_for_channel(String.t(), pos_integer()) :: [{String.t(), integer()}]
+  def top_domains_for_channel(channel, limit \\ 10) do
+    Schema
+    |> where(channel: ^channel)
     |> group_by([u], u.domain)
     |> order_by([u], desc: count(u.id))
     |> limit(^limit)

@@ -7,8 +7,8 @@ defmodule IrcBotWeb.DashboardLiveTest do
     {:ok, view, html} = live(conn, "/")
 
     assert html =~ "IRC Bot Dashboard"
-    assert html =~ "Live Message Feed"
-    assert html =~ "Top Karma"
+    assert html =~ "#general"
+    assert html =~ "Channel Karma"
     assert html =~ "Disconnected"
     assert has_element?(view, "a", "View Full Leaderboard")
   end

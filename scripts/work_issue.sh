@@ -67,7 +67,30 @@ GH_USER=$(gh api user --jq '.login')
 log "Assigning issue #${ISSUE_NUMBER} to ${GH_USER}..."
 gh issue edit "$ISSUE_NUMBER" --repo "$REPO" --add-assignee "$GH_USER"
 
-# ── Step 3: Create feature branch ───────────────────────────────────
+# ── Step 3: Announce plan and mark in-progress ────────────────────────
+log "Generating implementation plan for issue #${ISSUE_NUMBER}..."
+
+PLAN=$("$CLAUDE" -p --max-budget-usd 0.50 \
+  "Given this GitHub issue for an Elixir/Phoenix IRC bot project, write a brief plan (3-5 bullet points) of what you will implement. Be specific about files and modules. Do not use markdown headers, just bullet points.
+
+Issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}
+
+${ISSUE_BODY}")
+
+log "Posting plan comment on issue #${ISSUE_NUMBER}..."
+gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body "$(cat <<COMMENT_EOF
+I will take care of this!
+
+Here's my plan:
+${PLAN}
+COMMENT_EOF
+)"
+
+log "Adding 'in progress' label to issue #${ISSUE_NUMBER}..."
+gh label create "in progress" --repo "$REPO" --color "ededed" --description "Work is underway" 2>/dev/null || true
+gh issue edit "$ISSUE_NUMBER" --repo "$REPO" --add-label "in progress"
+
+# ── Step 4: Create feature branch ───────────────────────────────────
 slugify() {
   echo "$1" \
     | tr '[:upper:]' '[:lower:]' \
@@ -83,7 +106,7 @@ git checkout "$DEFAULT_BRANCH"
 git pull origin "$DEFAULT_BRANCH"
 git checkout -b "$BRANCH"
 
-# ── Step 4: Invoke Claude Code ───────────────────────────────────────
+# ── Step 5: Invoke Claude Code ───────────────────────────────────────
 log "Invoking Claude Code to implement issue #${ISSUE_NUMBER}..."
 
 read -r -d '' PROMPT <<PROMPT_EOF || true
@@ -125,11 +148,11 @@ PROMPT_EOF
   --max-budget-usd "$MAX_BUDGET" \
   "$PROMPT"
 
-# ── Step 5: Verify tests pass ───────────────────────────────────────
+# ── Step 6: Verify tests pass ───────────────────────────────────────
 log "Running test suite to verify implementation..."
 "$MIXE" mix test || die "Tests failed after implementation. Branch ${BRANCH} needs manual fixes."
 
-# ── Step 6: Push branch and create PR ───────────────────────────────
+# ── Step 7: Push branch and create PR ───────────────────────────────
 log "Pushing branch ${BRANCH} to origin..."
 git push -u origin "$BRANCH"
 
@@ -159,7 +182,7 @@ PR_EOF
 
 log "Pull request created: ${PR_URL}"
 
-# ── Step 7: Restart dev server ──────────────────────────────────────
+# ── Step 8: Restart dev server ──────────────────────────────────────
 log "Restarting dev server..."
 
 PIDS=$(pgrep -f "phx.server" 2>/dev/null || true)

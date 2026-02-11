@@ -31,7 +31,7 @@ defmodule IrcBotWeb.IrcComponents do
 
   def message_feed(assigns) do
     ~H"""
-    <div class="overflow-y-auto max-h-96 space-y-1 font-mono text-sm" id="message-feed">
+    <div class="overflow-y-auto max-h-96 space-y-1 font-mono text-sm" id="message-feed" phx-hook="ScrollBottom">
       <div :if={@messages == []} class="text-base-content/50 italic">
         {@empty_text}
       </div>

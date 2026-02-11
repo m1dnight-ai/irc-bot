@@ -17,6 +17,10 @@ config :irc_bot, IrcBotWeb.Endpoint,
   secret_key_base: "7gBgjQrS+uGdI+tgzI2EQJjXDwN1rvSEkLsfd0p2zNEMmCPdCbUhqXqVo364KtAj",
   server: false
 
+# IRC config for tests (client doesn't start, but dashboard reads channels)
+config :irc_bot, :irc,
+  channels: ["#general"]
+
 # Print only warnings and errors during test
 config :logger, level: :warning
 
